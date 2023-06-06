@@ -1,0 +1,1 @@
+/usr/bin/cc  -pthread -g CMakeFiles/webserver_files.dir/request.c.o CMakeFiles/webserver_files.dir/segel.c.o CMakeFiles/webserver_files.dir/server.c.o CMakeFiles/webserver_files.dir/connfdList.c.o -o webserver_files 

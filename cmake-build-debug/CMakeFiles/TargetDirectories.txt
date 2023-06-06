@@ -1,0 +1,3 @@
+/mnt/c/Users/illus/OneDrive - Technion/Semester 5/Operating Systems/HW3/webserver-files/cmake-build-debug/CMakeFiles/webserver_files.dir
+/mnt/c/Users/illus/OneDrive - Technion/Semester 5/Operating Systems/HW3/webserver-files/cmake-build-debug/CMakeFiles/edit_cache.dir
+/mnt/c/Users/illus/OneDrive - Technion/Semester 5/Operating Systems/HW3/webserver-files/cmake-build-debug/CMakeFiles/rebuild_cache.dir
