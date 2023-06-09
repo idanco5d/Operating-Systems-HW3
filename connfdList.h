@@ -17,6 +17,7 @@ int popFromList();
 void destroyList();
 void printList();
 bool isListEmpty();
+unsigned int getNumOfNodes();
 
 #define WEBSERVER_FILES_CONNFDLIST_H
 

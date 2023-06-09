@@ -6,6 +6,14 @@
 
 #IncludeRegexTransform: 
 
+/mnt/c/Users/illus/OneDrive - Technion/Semester 5/Operating Systems/HW3/webserver-files/connfdList.c
+connfdList.h
+/mnt/c/Users/illus/OneDrive - Technion/Semester 5/Operating Systems/HW3/webserver-files/connfdList.h
+stdio.h
+-
+stdlib.h
+-
+
 /mnt/c/Users/illus/OneDrive - Technion/Semester 5/Operating Systems/HW3/webserver-files/connfdList.h
 stdbool.h
 -

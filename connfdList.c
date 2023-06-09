@@ -8,24 +8,22 @@
 #include <stdlib.h>
 
 connfdNode *head = NULL;
-connfdNode *tail = NULL;
-
-void initializeList() {
-    head = NULL;
-    tail = NULL;
-}
+unsigned int num_of_nodes = 0;
 
 void insertList(int connfd) {
     connfdNode *new_node = (connfdNode*)malloc(sizeof(connfdNode));
     new_node->connfd = connfd;
     new_node->next = NULL;
-    if (head == NULL) {
+    num_of_nodes++;
+    if (!head) {
         head = new_node;
-        tail = new_node;
-    } else {
-        tail->next = new_node;
-        tail = new_node;
+        return;
     }
+    connfdNode *temp = head;
+    while (temp->next) {
+        temp = temp->next;
+    }
+    temp->next = new_node;
 }
 
 int popFromList() {
@@ -37,6 +35,7 @@ int popFromList() {
     connfdNode *temp = head;
     head = head->next;
     free(temp);
+    num_of_nodes--;
     return connfd;
 }
 
@@ -47,18 +46,21 @@ void destroyList() {
         free(temp);
         temp = next;
     }
+    num_of_nodes = 0;
     head = NULL;
-    tail = NULL;
 }
 
 void printList() {
     connfdNode *temp = head;
     while(temp != NULL) {
-        printf("%d ", temp->connfd);
         temp = temp->next;
     }
 }
 
 bool isListEmpty() {
-    return head == NULL && tail == NULL;
+    return head == NULL;
+}
+
+unsigned int getNumOfNodes() {
+    return num_of_nodes;
 }
