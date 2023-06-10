@@ -10,9 +10,10 @@
 connfdNode *head = NULL;
 unsigned int num_of_nodes = 0;
 
-void insertList(int connfd) {
+void insertList(int connfd, struct timeval arrival_time) {
     connfdNode *new_node = (connfdNode*)malloc(sizeof(connfdNode));
     new_node->connfd = connfd;
+    new_node->arrival_time = arrival_time;
     new_node->next = NULL;
     num_of_nodes++;
     if (!head) {
@@ -26,17 +27,22 @@ void insertList(int connfd) {
     temp->next = new_node;
 }
 
-int popFromList() {
+connfdNode popFromList() {
     if (head == NULL) {
         printf("List is empty\n");
-        return -1;
+        connfdNode nullNode;
+        nullNode.next = NULL;
+        nullNode.connfd = -1;
+        return nullNode;
     }
-    int connfd = head->connfd;
+    connfdNode toReturn;
+    toReturn.connfd = head->connfd;
+    toReturn.arrival_time = head->arrival_time;
     connfdNode *temp = head;
     head = head->next;
     free(temp);
     num_of_nodes--;
-    return connfd;
+    return toReturn;
 }
 
 void destroyList() {
