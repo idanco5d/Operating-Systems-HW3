@@ -3,6 +3,706 @@ platform linux -- Python 3.11.3, pytest-7.3.1, pluggy-1.0.0
 rootdir: /mnt/c/Users/illus/OneDrive - Technion/Semester 5/Operating Systems/HW3/webserver-files/tests
 plugins: xdist-3.3.1
 created: 4/4 workers
-4 workers [130 items]
+4 workers [12 items]
 
-FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.F...F...FFFF.F.F..F..F.F.
+FFFFFFFFFFFF                                                             [100%]
+=================================== FAILURES ===================================
+_________________________________ test_sanity __________________________________
+[gw0] linux -- Python 3.11.3 /usr/bin/python3
+
+server_port = 20551
+
+    def test_sanity(server_port):
+        with Server("./server", server_port, 1, 1, "random") as server:
+            sleep(0.1)
+            with FuturesSession() as session1:
+                future1 = session1.get(
+                    f"http://localhost:{server_port}/output.cgi?1")
+                sleep(0.1)
+                with Session() as session2:
+>                   with pytest.raises(exceptions.ConnectionError):
+E                   Failed: DID NOT RAISE <class 'requests.exceptions.ConnectionError'>
+
+test_drop_random.py:20: Failed
+_______________________________ test_load[2-4-4] _______________________________
+[gw1] linux -- Python 3.11.3 /usr/bin/python3
+
+threads = 2, queue = 4, amount = 4, server_port = 12259
+
+    @pytest.mark.parametrize("threads, queue, amount",
+                             [
+                                 (1, 2, 3),
+                                 (2, 4, 4),
+                                 (2, 4, 8),
+                                 (4, 4, 8),
+                                 (4, 8, 8),
+                                 (4, 8, 10),
+                             ])
+    def test_load(threads, queue, amount, server_port):
+        with Server("./server", server_port, threads, queue, "random") as server:
+            sleep(0.1)
+            clients = spawn_clients(amount, server_port)
+            count = 0
+            connections = []
+            for i in range(amount):
+                try:
+                    response = clients[i][1].result()
+                    clients[i][0].close()
+                    expected = DYNAMIC_OUTPUT_CONTENT.format(seconds=f"1.{i:0<1}")
+                    expected_headers = generate_dynamic_headers(123, (count // threads) + 1, 0, (count // threads) + 1)
+                    expected_dispatch = 0 if i < threads else (
+                        1 + 0.2 * (count-threads)) - i * 0.1
+>                   validate_response_full_with_dispatch(response, expected_headers, expected, expected_dispatch)
+
+test_drop_random.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200]>
+expected_headers = {'Content-length': '123', 'Content-type': 'text/html', 'Server': 'OS-HW3 Web Server', 'Stat-Req-Arrival': '\\: \\d+.\\d+', ...}
+expected = '<p>Welcome to the CGI program<\\/p>[\\r\\n]+<p>My only purpose is to waste time on the server!<\\/p>[\\r\\n]+<p>I spun for 1.2\\d seconds<\\/p>[\\r\\n]+$'
+dispatch = 0.8
+
+    def validate_response_full_with_dispatch(response: requests.models.Response, expected_headers: dict, expected: str, dispatch: float):
+        assert response.status_code == 200
+        assert response.headers.keys() == expected_headers.keys(),\
+            f"\nExpected:\n{list(expected_headers.keys())}"\
+            f"\nGot:\n{list(response.headers.keys())}"
+        for header, value in expected_headers.items():
+            assert re.fullmatch(value, response.headers[header]),\
+                f"\nHeader:\n{header}"\
+                f"\nExpected:\n{value}"\
+                f"\nGot:\n{response.headers[header]}"
+        assert re.fullmatch(expected, response.text),\
+            f"\nExpected:\n{expected}"\
+            f"\nGot:\n{response.text}"
+>       assert abs(float(response.headers['Stat-Req-Dispatch'][2:]) - dispatch) < 0.1,\
+            f"\nExpected:\n{dispatch}"\
+            f"\nGot:\n{float(response.headers['Stat-Req-Dispatch'][2:])}"
+E       AssertionError: 
+E       Expected:
+E       0.8
+E       Got:
+E       1.1844674407370936
+
+utils.py:87: AssertionError
+_______________________________ test_load[4-4-8] _______________________________
+[gw2] linux -- Python 3.11.3 /usr/bin/python3
+
+threads = 4, queue = 4, amount = 8, server_port = 20474
+
+    @pytest.mark.parametrize("threads, queue, amount",
+                             [
+                                 (1, 2, 3),
+                                 (2, 4, 4),
+                                 (2, 4, 8),
+                                 (4, 4, 8),
+                                 (4, 8, 8),
+                                 (4, 8, 10),
+                             ])
+    def test_load(threads, queue, amount, server_port):
+        with Server("./server", server_port, threads, queue, "random") as server:
+            sleep(0.1)
+            clients = spawn_clients(amount, server_port)
+            count = 0
+            connections = []
+            for i in range(amount):
+                try:
+                    response = clients[i][1].result()
+                    clients[i][0].close()
+                    expected = DYNAMIC_OUTPUT_CONTENT.format(seconds=f"1.{i:0<1}")
+                    expected_headers = generate_dynamic_headers(123, (count // threads) + 1, 0, (count // threads) + 1)
+                    expected_dispatch = 0 if i < threads else (
+                        1 + 0.2 * (count-threads)) - i * 0.1
+>                   validate_response_full_with_dispatch(response, expected_headers, expected, expected_dispatch)
+
+test_drop_random.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200]>
+expected_headers = {'Content-length': '123', 'Content-type': 'text/html', 'Server': 'OS-HW3 Web Server', 'Stat-Req-Arrival': '\\: \\d+.\\d+', ...}
+expected = '<p>Welcome to the CGI program<\\/p>[\\r\\n]+<p>My only purpose is to waste time on the server!<\\/p>[\\r\\n]+<p>I spun for 1.4\\d seconds<\\/p>[\\r\\n]+$'
+dispatch = 0.6
+
+    def validate_response_full_with_dispatch(response: requests.models.Response, expected_headers: dict, expected: str, dispatch: float):
+        assert response.status_code == 200
+        assert response.headers.keys() == expected_headers.keys(),\
+            f"\nExpected:\n{list(expected_headers.keys())}"\
+            f"\nGot:\n{list(response.headers.keys())}"
+        for header, value in expected_headers.items():
+            assert re.fullmatch(value, response.headers[header]),\
+                f"\nHeader:\n{header}"\
+                f"\nExpected:\n{value}"\
+                f"\nGot:\n{response.headers[header]}"
+        assert re.fullmatch(expected, response.text),\
+            f"\nExpected:\n{expected}"\
+            f"\nGot:\n{response.text}"
+>       assert abs(float(response.headers['Stat-Req-Dispatch'][2:]) - dispatch) < 0.1,\
+            f"\nExpected:\n{dispatch}"\
+            f"\nGot:\n{float(response.headers['Stat-Req-Dispatch'][2:])}"
+E       AssertionError: 
+E       Expected:
+E       0.6
+E       Got:
+E       1.1844674407370914
+
+utils.py:87: AssertionError
+______________________________ test_load[4-8-10] _______________________________
+[gw3] linux -- Python 3.11.3 /usr/bin/python3
+
+threads = 4, queue = 8, amount = 10, server_port = 22353
+
+    @pytest.mark.parametrize("threads, queue, amount",
+                             [
+                                 (1, 2, 3),
+                                 (2, 4, 4),
+                                 (2, 4, 8),
+                                 (4, 4, 8),
+                                 (4, 8, 8),
+                                 (4, 8, 10),
+                             ])
+    def test_load(threads, queue, amount, server_port):
+        with Server("./server", server_port, threads, queue, "random") as server:
+            sleep(0.1)
+            clients = spawn_clients(amount, server_port)
+            count = 0
+            connections = []
+            for i in range(amount):
+                try:
+                    response = clients[i][1].result()
+                    clients[i][0].close()
+                    expected = DYNAMIC_OUTPUT_CONTENT.format(seconds=f"1.{i:0<1}")
+                    expected_headers = generate_dynamic_headers(123, (count // threads) + 1, 0, (count // threads) + 1)
+                    expected_dispatch = 0 if i < threads else (
+                        1 + 0.2 * (count-threads)) - i * 0.1
+>                   validate_response_full_with_dispatch(response, expected_headers, expected, expected_dispatch)
+
+test_drop_random.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200]>
+expected_headers = {'Content-length': '123', 'Content-type': 'text/html', 'Server': 'OS-HW3 Web Server', 'Stat-Req-Arrival': '\\: \\d+.\\d+', ...}
+expected = '<p>Welcome to the CGI program<\\/p>[\\r\\n]+<p>My only purpose is to waste time on the server!<\\/p>[\\r\\n]+<p>I spun for 1.4\\d seconds<\\/p>[\\r\\n]+$'
+dispatch = 0.6
+
+    def validate_response_full_with_dispatch(response: requests.models.Response, expected_headers: dict, expected: str, dispatch: float):
+        assert response.status_code == 200
+        assert response.headers.keys() == expected_headers.keys(),\
+            f"\nExpected:\n{list(expected_headers.keys())}"\
+            f"\nGot:\n{list(response.headers.keys())}"
+        for header, value in expected_headers.items():
+            assert re.fullmatch(value, response.headers[header]),\
+                f"\nHeader:\n{header}"\
+                f"\nExpected:\n{value}"\
+                f"\nGot:\n{response.headers[header]}"
+        assert re.fullmatch(expected, response.text),\
+            f"\nExpected:\n{expected}"\
+            f"\nGot:\n{response.text}"
+>       assert abs(float(response.headers['Stat-Req-Dispatch'][2:]) - dispatch) < 0.1,\
+            f"\nExpected:\n{dispatch}"\
+            f"\nGot:\n{float(response.headers['Stat-Req-Dispatch'][2:])}"
+E       AssertionError: 
+E       Expected:
+E       0.6
+E       Got:
+E       1.1844674407370914
+
+utils.py:87: AssertionError
+_______________________________ test_load[1-2-3] _______________________________
+[gw0] linux -- Python 3.11.3 /usr/bin/python3
+
+threads = 1, queue = 2, amount = 3, server_port = 15799
+
+    @pytest.mark.parametrize("threads, queue, amount",
+                             [
+                                 (1, 2, 3),
+                                 (2, 4, 4),
+                                 (2, 4, 8),
+                                 (4, 4, 8),
+                                 (4, 8, 8),
+                                 (4, 8, 10),
+                             ])
+    def test_load(threads, queue, amount, server_port):
+        with Server("./server", server_port, threads, queue, "random") as server:
+            sleep(0.1)
+            clients = spawn_clients(amount, server_port)
+            count = 0
+            connections = []
+            for i in range(amount):
+                try:
+                    response = clients[i][1].result()
+                    clients[i][0].close()
+                    expected = DYNAMIC_OUTPUT_CONTENT.format(seconds=f"1.{i:0<1}")
+                    expected_headers = generate_dynamic_headers(123, (count // threads) + 1, 0, (count // threads) + 1)
+                    expected_dispatch = 0 if i < threads else (
+                        1 + 0.2 * (count-threads)) - i * 0.1
+>                   validate_response_full_with_dispatch(response, expected_headers, expected, expected_dispatch)
+
+test_drop_random.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200]>
+expected_headers = {'Content-length': '123', 'Content-type': 'text/html', 'Server': 'OS-HW3 Web Server', 'Stat-Req-Arrival': '\\: \\d+.\\d+', ...}
+expected = '<p>Welcome to the CGI program<\\/p>[\\r\\n]+<p>My only purpose is to waste time on the server!<\\/p>[\\r\\n]+<p>I spun for 1.1\\d seconds<\\/p>[\\r\\n]+$'
+dispatch = 0.9
+
+    def validate_response_full_with_dispatch(response: requests.models.Response, expected_headers: dict, expected: str, dispatch: float):
+        assert response.status_code == 200
+        assert response.headers.keys() == expected_headers.keys(),\
+            f"\nExpected:\n{list(expected_headers.keys())}"\
+            f"\nGot:\n{list(response.headers.keys())}"
+        for header, value in expected_headers.items():
+            assert re.fullmatch(value, response.headers[header]),\
+                f"\nHeader:\n{header}"\
+                f"\nExpected:\n{value}"\
+                f"\nGot:\n{response.headers[header]}"
+        assert re.fullmatch(expected, response.text),\
+            f"\nExpected:\n{expected}"\
+            f"\nGot:\n{response.text}"
+>       assert abs(float(response.headers['Stat-Req-Dispatch'][2:]) - dispatch) < 0.1,\
+            f"\nExpected:\n{dispatch}"\
+            f"\nGot:\n{float(response.headers['Stat-Req-Dispatch'][2:])}"
+E       AssertionError: 
+E       Expected:
+E       0.9
+E       Got:
+E       1.1844674407370945
+
+utils.py:87: AssertionError
+_______________________________ test_load[2-4-8] _______________________________
+[gw1] linux -- Python 3.11.3 /usr/bin/python3
+
+threads = 2, queue = 4, amount = 8, server_port = 19295
+
+    @pytest.mark.parametrize("threads, queue, amount",
+                             [
+                                 (1, 2, 3),
+                                 (2, 4, 4),
+                                 (2, 4, 8),
+                                 (4, 4, 8),
+                                 (4, 8, 8),
+                                 (4, 8, 10),
+                             ])
+    def test_load(threads, queue, amount, server_port):
+        with Server("./server", server_port, threads, queue, "random") as server:
+            sleep(0.1)
+            clients = spawn_clients(amount, server_port)
+            count = 0
+            connections = []
+            for i in range(amount):
+                try:
+                    response = clients[i][1].result()
+                    clients[i][0].close()
+                    expected = DYNAMIC_OUTPUT_CONTENT.format(seconds=f"1.{i:0<1}")
+                    expected_headers = generate_dynamic_headers(123, (count // threads) + 1, 0, (count // threads) + 1)
+                    expected_dispatch = 0 if i < threads else (
+                        1 + 0.2 * (count-threads)) - i * 0.1
+>                   validate_response_full_with_dispatch(response, expected_headers, expected, expected_dispatch)
+
+test_drop_random.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200]>
+expected_headers = {'Content-length': '123', 'Content-type': 'text/html', 'Server': 'OS-HW3 Web Server', 'Stat-Req-Arrival': '\\: \\d+.\\d+', ...}
+expected = '<p>Welcome to the CGI program<\\/p>[\\r\\n]+<p>My only purpose is to waste time on the server!<\\/p>[\\r\\n]+<p>I spun for 1.2\\d seconds<\\/p>[\\r\\n]+$'
+dispatch = 0.8
+
+    def validate_response_full_with_dispatch(response: requests.models.Response, expected_headers: dict, expected: str, dispatch: float):
+        assert response.status_code == 200
+        assert response.headers.keys() == expected_headers.keys(),\
+            f"\nExpected:\n{list(expected_headers.keys())}"\
+            f"\nGot:\n{list(response.headers.keys())}"
+        for header, value in expected_headers.items():
+            assert re.fullmatch(value, response.headers[header]),\
+                f"\nHeader:\n{header}"\
+                f"\nExpected:\n{value}"\
+                f"\nGot:\n{response.headers[header]}"
+        assert re.fullmatch(expected, response.text),\
+            f"\nExpected:\n{expected}"\
+            f"\nGot:\n{response.text}"
+>       assert abs(float(response.headers['Stat-Req-Dispatch'][2:]) - dispatch) < 0.1,\
+            f"\nExpected:\n{dispatch}"\
+            f"\nGot:\n{float(response.headers['Stat-Req-Dispatch'][2:])}"
+E       AssertionError: 
+E       Expected:
+E       0.8
+E       Got:
+E       1.1844674407370934
+
+utils.py:87: AssertionError
+______________________ test_available_after_load[2-4-4-4] ______________________
+[gw3] linux -- Python 3.11.3 /usr/bin/python3
+
+threads = 2, queue = 4, amount_before = 4, amount_after = 4, server_port = 16091
+
+    @pytest.mark.parametrize("threads, queue, amount_before, amount_after",
+                             [
+                                 (2, 4, 4, 4),
+                                 (2, 4, 8, 8),
+                                 (4, 4, 8, 8),
+                                 (4, 8, 8, 8),
+                                 (4, 8, 10, 10),
+                             ])
+    def test_available_after_load(threads, queue, amount_before, amount_after, server_port):
+        with Server("./server", server_port, threads, queue, "random") as server:
+            sleep(0.1)
+            clients = spawn_clients(amount_before, server_port)
+            count_before = 0
+            connections_before = []
+            for i in range(amount_before):
+                try:
+                    response = clients[i][1].result()
+                    clients[i][0].close()
+                    expected = DYNAMIC_OUTPUT_CONTENT.format(seconds=f"1.{i:0<1}")
+                    expected_headers = generate_dynamic_headers(
+                        123, (count_before // threads) + 1, 0, (count_before // threads) + 1)
+                    expected_dispatch = 0 if i < threads else (
+                        1 + 0.2 * (count_before-threads)) - i * 0.1
+>                   validate_response_full_with_dispatch(response, expected_headers, expected, expected_dispatch)
+
+test_drop_random.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200]>
+expected_headers = {'Content-length': '123', 'Content-type': 'text/html', 'Server': 'OS-HW3 Web Server', 'Stat-Req-Arrival': '\\: \\d+.\\d+', ...}
+expected = '<p>Welcome to the CGI program<\\/p>[\\r\\n]+<p>My only purpose is to waste time on the server!<\\/p>[\\r\\n]+<p>I spun for 1.2\\d seconds<\\/p>[\\r\\n]+$'
+dispatch = 0.8
+
+    def validate_response_full_with_dispatch(response: requests.models.Response, expected_headers: dict, expected: str, dispatch: float):
+        assert response.status_code == 200
+        assert response.headers.keys() == expected_headers.keys(),\
+            f"\nExpected:\n{list(expected_headers.keys())}"\
+            f"\nGot:\n{list(response.headers.keys())}"
+        for header, value in expected_headers.items():
+            assert re.fullmatch(value, response.headers[header]),\
+                f"\nHeader:\n{header}"\
+                f"\nExpected:\n{value}"\
+                f"\nGot:\n{response.headers[header]}"
+        assert re.fullmatch(expected, response.text),\
+            f"\nExpected:\n{expected}"\
+            f"\nGot:\n{response.text}"
+>       assert abs(float(response.headers['Stat-Req-Dispatch'][2:]) - dispatch) < 0.1,\
+            f"\nExpected:\n{dispatch}"\
+            f"\nGot:\n{float(response.headers['Stat-Req-Dispatch'][2:])}"
+E       AssertionError: 
+E       Expected:
+E       0.8
+E       Got:
+E       1.1844674407370934
+
+utils.py:87: AssertionError
+_______________________________ test_load[4-8-8] _______________________________
+[gw2] linux -- Python 3.11.3 /usr/bin/python3
+
+threads = 4, queue = 8, amount = 8, server_port = 17602
+
+    @pytest.mark.parametrize("threads, queue, amount",
+                             [
+                                 (1, 2, 3),
+                                 (2, 4, 4),
+                                 (2, 4, 8),
+                                 (4, 4, 8),
+                                 (4, 8, 8),
+                                 (4, 8, 10),
+                             ])
+    def test_load(threads, queue, amount, server_port):
+        with Server("./server", server_port, threads, queue, "random") as server:
+            sleep(0.1)
+            clients = spawn_clients(amount, server_port)
+            count = 0
+            connections = []
+            for i in range(amount):
+                try:
+                    response = clients[i][1].result()
+                    clients[i][0].close()
+                    expected = DYNAMIC_OUTPUT_CONTENT.format(seconds=f"1.{i:0<1}")
+                    expected_headers = generate_dynamic_headers(123, (count // threads) + 1, 0, (count // threads) + 1)
+                    expected_dispatch = 0 if i < threads else (
+                        1 + 0.2 * (count-threads)) - i * 0.1
+>                   validate_response_full_with_dispatch(response, expected_headers, expected, expected_dispatch)
+
+test_drop_random.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200]>
+expected_headers = {'Content-length': '123', 'Content-type': 'text/html', 'Server': 'OS-HW3 Web Server', 'Stat-Req-Arrival': '\\: \\d+.\\d+', ...}
+expected = '<p>Welcome to the CGI program<\\/p>[\\r\\n]+<p>My only purpose is to waste time on the server!<\\/p>[\\r\\n]+<p>I spun for 1.4\\d seconds<\\/p>[\\r\\n]+$'
+dispatch = 0.6
+
+    def validate_response_full_with_dispatch(response: requests.models.Response, expected_headers: dict, expected: str, dispatch: float):
+        assert response.status_code == 200
+        assert response.headers.keys() == expected_headers.keys(),\
+            f"\nExpected:\n{list(expected_headers.keys())}"\
+            f"\nGot:\n{list(response.headers.keys())}"
+        for header, value in expected_headers.items():
+            assert re.fullmatch(value, response.headers[header]),\
+                f"\nHeader:\n{header}"\
+                f"\nExpected:\n{value}"\
+                f"\nGot:\n{response.headers[header]}"
+        assert re.fullmatch(expected, response.text),\
+            f"\nExpected:\n{expected}"\
+            f"\nGot:\n{response.text}"
+>       assert abs(float(response.headers['Stat-Req-Dispatch'][2:]) - dispatch) < 0.1,\
+            f"\nExpected:\n{dispatch}"\
+            f"\nGot:\n{float(response.headers['Stat-Req-Dispatch'][2:])}"
+E       AssertionError: 
+E       Expected:
+E       0.6
+E       Got:
+E       1.1844674407370914
+
+utils.py:87: AssertionError
+______________________ test_available_after_load[2-4-8-8] ______________________
+[gw0] linux -- Python 3.11.3 /usr/bin/python3
+
+threads = 2, queue = 4, amount_before = 8, amount_after = 8, server_port = 14849
+
+    @pytest.mark.parametrize("threads, queue, amount_before, amount_after",
+                             [
+                                 (2, 4, 4, 4),
+                                 (2, 4, 8, 8),
+                                 (4, 4, 8, 8),
+                                 (4, 8, 8, 8),
+                                 (4, 8, 10, 10),
+                             ])
+    def test_available_after_load(threads, queue, amount_before, amount_after, server_port):
+        with Server("./server", server_port, threads, queue, "random") as server:
+            sleep(0.1)
+            clients = spawn_clients(amount_before, server_port)
+            count_before = 0
+            connections_before = []
+            for i in range(amount_before):
+                try:
+                    response = clients[i][1].result()
+                    clients[i][0].close()
+                    expected = DYNAMIC_OUTPUT_CONTENT.format(seconds=f"1.{i:0<1}")
+                    expected_headers = generate_dynamic_headers(
+                        123, (count_before // threads) + 1, 0, (count_before // threads) + 1)
+                    expected_dispatch = 0 if i < threads else (
+                        1 + 0.2 * (count_before-threads)) - i * 0.1
+>                   validate_response_full_with_dispatch(response, expected_headers, expected, expected_dispatch)
+
+test_drop_random.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200]>
+expected_headers = {'Content-length': '123', 'Content-type': 'text/html', 'Server': 'OS-HW3 Web Server', 'Stat-Req-Arrival': '\\: \\d+.\\d+', ...}
+expected = '<p>Welcome to the CGI program<\\/p>[\\r\\n]+<p>My only purpose is to waste time on the server!<\\/p>[\\r\\n]+<p>I spun for 1.2\\d seconds<\\/p>[\\r\\n]+$'
+dispatch = 0.8
+
+    def validate_response_full_with_dispatch(response: requests.models.Response, expected_headers: dict, expected: str, dispatch: float):
+        assert response.status_code == 200
+        assert response.headers.keys() == expected_headers.keys(),\
+            f"\nExpected:\n{list(expected_headers.keys())}"\
+            f"\nGot:\n{list(response.headers.keys())}"
+        for header, value in expected_headers.items():
+            assert re.fullmatch(value, response.headers[header]),\
+                f"\nHeader:\n{header}"\
+                f"\nExpected:\n{value}"\
+                f"\nGot:\n{response.headers[header]}"
+        assert re.fullmatch(expected, response.text),\
+            f"\nExpected:\n{expected}"\
+            f"\nGot:\n{response.text}"
+>       assert abs(float(response.headers['Stat-Req-Dispatch'][2:]) - dispatch) < 0.1,\
+            f"\nExpected:\n{dispatch}"\
+            f"\nGot:\n{float(response.headers['Stat-Req-Dispatch'][2:])}"
+E       AssertionError: 
+E       Expected:
+E       0.8
+E       Got:
+E       1.1844674407370934
+
+utils.py:87: AssertionError
+______________________ test_available_after_load[4-4-8-8] ______________________
+[gw1] linux -- Python 3.11.3 /usr/bin/python3
+
+threads = 4, queue = 4, amount_before = 8, amount_after = 8, server_port = 9235
+
+    @pytest.mark.parametrize("threads, queue, amount_before, amount_after",
+                             [
+                                 (2, 4, 4, 4),
+                                 (2, 4, 8, 8),
+                                 (4, 4, 8, 8),
+                                 (4, 8, 8, 8),
+                                 (4, 8, 10, 10),
+                             ])
+    def test_available_after_load(threads, queue, amount_before, amount_after, server_port):
+        with Server("./server", server_port, threads, queue, "random") as server:
+            sleep(0.1)
+            clients = spawn_clients(amount_before, server_port)
+            count_before = 0
+            connections_before = []
+            for i in range(amount_before):
+                try:
+                    response = clients[i][1].result()
+                    clients[i][0].close()
+                    expected = DYNAMIC_OUTPUT_CONTENT.format(seconds=f"1.{i:0<1}")
+                    expected_headers = generate_dynamic_headers(
+                        123, (count_before // threads) + 1, 0, (count_before // threads) + 1)
+                    expected_dispatch = 0 if i < threads else (
+                        1 + 0.2 * (count_before-threads)) - i * 0.1
+>                   validate_response_full_with_dispatch(response, expected_headers, expected, expected_dispatch)
+
+test_drop_random.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200]>
+expected_headers = {'Content-length': '123', 'Content-type': 'text/html', 'Server': 'OS-HW3 Web Server', 'Stat-Req-Arrival': '\\: \\d+.\\d+', ...}
+expected = '<p>Welcome to the CGI program<\\/p>[\\r\\n]+<p>My only purpose is to waste time on the server!<\\/p>[\\r\\n]+<p>I spun for 1.5\\d seconds<\\/p>[\\r\\n]+$'
+dispatch = 0.7
+
+    def validate_response_full_with_dispatch(response: requests.models.Response, expected_headers: dict, expected: str, dispatch: float):
+        assert response.status_code == 200
+        assert response.headers.keys() == expected_headers.keys(),\
+            f"\nExpected:\n{list(expected_headers.keys())}"\
+            f"\nGot:\n{list(response.headers.keys())}"
+        for header, value in expected_headers.items():
+>           assert re.fullmatch(value, response.headers[header]),\
+                f"\nHeader:\n{header}"\
+                f"\nExpected:\n{value}"\
+                f"\nGot:\n{response.headers[header]}"
+E           AssertionError: 
+E           Header:
+E           Stat-Thread-Count
+E           Expected:
+E           \: 2
+E           Got:
+E           : 3
+
+utils.py:80: AssertionError
+______________________ test_available_after_load[4-8-8-8] ______________________
+[gw2] linux -- Python 3.11.3 /usr/bin/python3
+
+threads = 4, queue = 8, amount_before = 8, amount_after = 8, server_port = 24596
+
+    @pytest.mark.parametrize("threads, queue, amount_before, amount_after",
+                             [
+                                 (2, 4, 4, 4),
+                                 (2, 4, 8, 8),
+                                 (4, 4, 8, 8),
+                                 (4, 8, 8, 8),
+                                 (4, 8, 10, 10),
+                             ])
+    def test_available_after_load(threads, queue, amount_before, amount_after, server_port):
+        with Server("./server", server_port, threads, queue, "random") as server:
+            sleep(0.1)
+            clients = spawn_clients(amount_before, server_port)
+            count_before = 0
+            connections_before = []
+            for i in range(amount_before):
+                try:
+                    response = clients[i][1].result()
+                    clients[i][0].close()
+                    expected = DYNAMIC_OUTPUT_CONTENT.format(seconds=f"1.{i:0<1}")
+                    expected_headers = generate_dynamic_headers(
+                        123, (count_before // threads) + 1, 0, (count_before // threads) + 1)
+                    expected_dispatch = 0 if i < threads else (
+                        1 + 0.2 * (count_before-threads)) - i * 0.1
+>                   validate_response_full_with_dispatch(response, expected_headers, expected, expected_dispatch)
+
+test_drop_random.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200]>
+expected_headers = {'Content-length': '123', 'Content-type': 'text/html', 'Server': 'OS-HW3 Web Server', 'Stat-Req-Arrival': '\\: \\d+.\\d+', ...}
+expected = '<p>Welcome to the CGI program<\\/p>[\\r\\n]+<p>My only purpose is to waste time on the server!<\\/p>[\\r\\n]+<p>I spun for 1.4\\d seconds<\\/p>[\\r\\n]+$'
+dispatch = 0.6
+
+    def validate_response_full_with_dispatch(response: requests.models.Response, expected_headers: dict, expected: str, dispatch: float):
+        assert response.status_code == 200
+        assert response.headers.keys() == expected_headers.keys(),\
+            f"\nExpected:\n{list(expected_headers.keys())}"\
+            f"\nGot:\n{list(response.headers.keys())}"
+        for header, value in expected_headers.items():
+            assert re.fullmatch(value, response.headers[header]),\
+                f"\nHeader:\n{header}"\
+                f"\nExpected:\n{value}"\
+                f"\nGot:\n{response.headers[header]}"
+        assert re.fullmatch(expected, response.text),\
+            f"\nExpected:\n{expected}"\
+            f"\nGot:\n{response.text}"
+>       assert abs(float(response.headers['Stat-Req-Dispatch'][2:]) - dispatch) < 0.1,\
+            f"\nExpected:\n{dispatch}"\
+            f"\nGot:\n{float(response.headers['Stat-Req-Dispatch'][2:])}"
+E       AssertionError: 
+E       Expected:
+E       0.6
+E       Got:
+E       1.1844674407370914
+
+utils.py:87: AssertionError
+_____________________ test_available_after_load[4-8-10-10] _____________________
+[gw3] linux -- Python 3.11.3 /usr/bin/python3
+
+threads = 4, queue = 8, amount_before = 10, amount_after = 10
+server_port = 23679
+
+    @pytest.mark.parametrize("threads, queue, amount_before, amount_after",
+                             [
+                                 (2, 4, 4, 4),
+                                 (2, 4, 8, 8),
+                                 (4, 4, 8, 8),
+                                 (4, 8, 8, 8),
+                                 (4, 8, 10, 10),
+                             ])
+    def test_available_after_load(threads, queue, amount_before, amount_after, server_port):
+        with Server("./server", server_port, threads, queue, "random") as server:
+            sleep(0.1)
+            clients = spawn_clients(amount_before, server_port)
+            count_before = 0
+            connections_before = []
+            for i in range(amount_before):
+                try:
+                    response = clients[i][1].result()
+                    clients[i][0].close()
+                    expected = DYNAMIC_OUTPUT_CONTENT.format(seconds=f"1.{i:0<1}")
+                    expected_headers = generate_dynamic_headers(
+                        123, (count_before // threads) + 1, 0, (count_before // threads) + 1)
+                    expected_dispatch = 0 if i < threads else (
+                        1 + 0.2 * (count_before-threads)) - i * 0.1
+>                   validate_response_full_with_dispatch(response, expected_headers, expected, expected_dispatch)
+
+test_drop_random.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [200]>
+expected_headers = {'Content-length': '123', 'Content-type': 'text/html', 'Server': 'OS-HW3 Web Server', 'Stat-Req-Arrival': '\\: \\d+.\\d+', ...}
+expected = '<p>Welcome to the CGI program<\\/p>[\\r\\n]+<p>My only purpose is to waste time on the server!<\\/p>[\\r\\n]+<p>I spun for 1.5\\d seconds<\\/p>[\\r\\n]+$'
+dispatch = 0.7
+
+    def validate_response_full_with_dispatch(response: requests.models.Response, expected_headers: dict, expected: str, dispatch: float):
+        assert response.status_code == 200
+        assert response.headers.keys() == expected_headers.keys(),\
+            f"\nExpected:\n{list(expected_headers.keys())}"\
+            f"\nGot:\n{list(response.headers.keys())}"
+        for header, value in expected_headers.items():
+            assert re.fullmatch(value, response.headers[header]),\
+                f"\nHeader:\n{header}"\
+                f"\nExpected:\n{value}"\
+                f"\nGot:\n{response.headers[header]}"
+        assert re.fullmatch(expected, response.text),\
+            f"\nExpected:\n{expected}"\
+            f"\nGot:\n{response.text}"
+>       assert abs(float(response.headers['Stat-Req-Dispatch'][2:]) - dispatch) < 0.1,\
+            f"\nExpected:\n{dispatch}"\
+            f"\nGot:\n{float(response.headers['Stat-Req-Dispatch'][2:])}"
+E       AssertionError: 
+E       Expected:
+E       0.7
+E       Got:
+E       1.1844674407370925
+
+utils.py:87: AssertionError
+=========================== short test summary info ============================
+FAILED test_drop_random.py::test_sanity - Failed: DID NOT RAISE <class 'reque...
+FAILED test_drop_random.py::test_load[2-4-4] - AssertionError: 
+FAILED test_drop_random.py::test_load[4-4-8] - AssertionError: 
+FAILED test_drop_random.py::test_load[4-8-10] - AssertionError: 
+FAILED test_drop_random.py::test_load[1-2-3] - AssertionError: 
+FAILED test_drop_random.py::test_load[2-4-8] - AssertionError: 
+FAILED test_drop_random.py::test_available_after_load[2-4-4-4] - AssertionErr...
+FAILED test_drop_random.py::test_load[4-8-8] - AssertionError: 
+FAILED test_drop_random.py::test_available_after_load[2-4-8-8] - AssertionErr...
+FAILED test_drop_random.py::test_available_after_load[4-4-8-8] - AssertionErr...
+FAILED test_drop_random.py::test_available_after_load[4-8-8-8] - AssertionErr...
+FAILED test_drop_random.py::test_available_after_load[4-8-10-10] - AssertionE...
+============================= 12 failed in 10.20s ==============================

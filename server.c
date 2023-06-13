@@ -6,9 +6,14 @@
 #include <bits/types/time_t.h>
 #include <sys/time.h>
 
+//#define MAX_SCHEDALG_SIZE 12
+
 pthread_cond_t cond;
+pthread_cond_t cond_master;
 pthread_mutex_t mutex;
 unsigned int num_of_working = 0;
+char* schedalg;
+
 
 // 
 // server.c: A very, very simple web server
@@ -54,43 +59,71 @@ void* requestHandleByThread(void* args) {
         connfdNode connfd_node = popFromList();
         num_of_working++;
         pthread_mutex_unlock(&mutex);
-
-        //
-        // HW3: In general, don't handle the request in the main thread.
-        // Save the relevant info in a buffer and have one of the worker threads
-        // do the work.
-        //
         stats.arrival_time = connfd_node.arrival_time;
         stats.handler_thread_stats = &threadStats;
-        struct timeval curr_dispatch_interval;
-        gettimeofday(&curr_dispatch_interval, NULL);
-        curr_dispatch_interval.tv_usec -= connfd_node.arrival_time.tv_usec;
-        curr_dispatch_interval.tv_sec -= connfd_node.arrival_time.tv_sec;
-        stats.dispatch_interval = curr_dispatch_interval;
-        threadStats.handler_thread_req_count++;
+        struct timeval curr_dispatch_time;
+        gettimeofday(&curr_dispatch_time, NULL);
+        timersub(&curr_dispatch_time, &connfd_node.arrival_time, &stats.dispatch_interval);
+        //threadStats.handler_thread_req_count++;
+        //to delete
+//        printf("Dispatch time is %lu in sec and %lu in usec\n", curr_dispatch_interval.tv_sec, curr_dispatch_interval.tv_usec);
+        //not to delete
         requestHandle(connfd_node.connfd, &stats);
         Close(connfd_node.connfd);
         pthread_mutex_lock(&mutex);
         num_of_working--;
+        if ((strcmp(schedalg,"block_flush") == 0 && num_of_working == 0 && getNumOfNodes() == 0) || strcmp(schedalg,"block") == 0) {
+            pthread_cond_signal(&cond_master);
+        }
         pthread_mutex_unlock(&mutex);
     }
     return NULL;
 }
 
 
+bool handleMasterThreadInDynamicOrDropTail(int* queueSize, int connfd, int maxSize, int numthreads) {
+    if (*queueSize == getNumOfNodes() + num_of_working) {
+        if (strcmp(schedalg, "dynamic")==0) {
+            if (*queueSize < maxSize) {
+                (*queueSize)++;
+            }
+        }
+        if (strcmp(schedalg, "dynamic")==0 || strcmp(schedalg, "drop_tail")==0) {
+            pthread_mutex_unlock(&mutex);
+            Close(connfd);
+            return true;
+        }
+    }
+    return false;
+}
+
+void handleBlockInMasterThread(int queueSize, int numthreads) {
+    if (strcmp(schedalg, "block")==0 || strcmp(schedalg, "block_flush")==0) {
+        while (queueSize == getNumOfNodes() + num_of_working) {
+                pthread_cond_wait(&cond_master, &mutex);
+        }
+    }
+}
+
+void insertToListOrDropHead(int connfd, int queueSize, struct timeval curr_arrival_time) {
+    if (connfd >= 0) {
+        if (strcmp(schedalg,"drop_head")==0 && queueSize == getNumOfNodes() + num_of_working) {
+            Close(popFromList().connfd);
+        }
+        insertList(connfd, curr_arrival_time);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     int listenfd, connfd, port, clientlen, numthreads, queueSize, maxSize;
-    char* schedalg;
     struct sockaddr_in clientaddr;
     pthread_mutex_init(&mutex,NULL);
     pthread_cond_init(&cond,NULL);
+    pthread_cond_init(&cond_master,NULL);
     getargs(&port, argc, argv, 1);
-
-    // 
-    // HW3: Create some threads...
-    //
     getargs(&numthreads,argc,argv, 2);
+    getargs(&schedalg,argc,argv, 4);
     for (int i = 0; i < numthreads; i++) {
         pthread_t t;
         int* threadNum = (int*)malloc(sizeof(int));
@@ -98,59 +131,26 @@ int main(int argc, char *argv[])
         pthread_create(&t, NULL, requestHandleByThread, (void*)threadNum);
     }
     getargs(&queueSize,argc,argv, 3);
-    getargs(&schedalg,argc,argv, 4);
     if (strcmp(schedalg, "dynamic")==0) {
         getargs(&maxSize, argc, argv, 5);
     }
+
     listenfd = Open_listenfd(port);
-    bool block_flush_threshold = false;
     while (1) {
         clientlen = sizeof(clientaddr);
-        pthread_mutex_lock(&mutex);
-        if (queueSize == getNumOfNodes()) {
-            if (strcmp(schedalg, "block")==0) {
-                pthread_mutex_unlock(&mutex);
-                continue;
-            }
-            else if (strcmp(schedalg, "block_flush")==0) {
-                pthread_mutex_unlock(&mutex);
-                block_flush_threshold = true;
-                continue;
-            }
-        }
-        if (block_flush_threshold) {
-            if (getNumOfNodes() > 0 || num_of_working > 0) {
-                pthread_mutex_unlock(&mutex);
-                continue;
-            }
-            block_flush_threshold = false;
-        }
-        pthread_mutex_unlock(&mutex);
         connfd = Accept(listenfd, (SA *) &clientaddr, (socklen_t *) &clientlen);
         struct timeval curr_arrival_time;
         gettimeofday(&curr_arrival_time, NULL);
         pthread_mutex_lock(&mutex);
-        if (queueSize == getNumOfNodes()) {
-            if (strcmp(schedalg, "dynamic")==0) {
-                if (queueSize < maxSize) {
-                    queueSize++;
-                }
-            }
-            if (strcmp(schedalg, "dynamic")==0 || strcmp(schedalg, "drop_tail")==0) {
-                pthread_mutex_unlock(&mutex);
-                Close(connfd);
-                continue;
-            }
+        handleBlockInMasterThread(queueSize, numthreads);
+        //to delete
+//        printf("We got a request on time %lu in sec and %lu in usec\n", curr_arrival_time.tv_sec, curr_arrival_time.tv_usec);
+        //not to delete
+        if (handleMasterThreadInDynamicOrDropTail(&queueSize, connfd, maxSize, numthreads)) {
+            continue;
         }
-        if (connfd >= 0) {
-            if (strcmp(schedalg,"drop_head")==0 && queueSize == getNumOfNodes()) {
-                Close(popFromList().connfd);
-            }
-            insertList(connfd, curr_arrival_time);
-        }
-        if (!isListEmpty()) {
-            pthread_cond_signal(&cond);
-        }
+        insertToListOrDropHead(connfd,queueSize,curr_arrival_time);
+        pthread_cond_signal(&cond);
         pthread_mutex_unlock(&mutex);
     }
 }
