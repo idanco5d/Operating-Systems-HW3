@@ -21,6 +21,8 @@ void destroyList();
 void printList();
 bool isListEmpty();
 unsigned int getNumOfNodes();
+void removeFromListAtPlace(unsigned int n);
+void dropHalfList();
 
 #define WEBSERVER_FILES_CONNFDLIST_H
 

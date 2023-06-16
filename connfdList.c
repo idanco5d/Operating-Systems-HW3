@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "segel.h"
 
 connfdNode *head = NULL;
 unsigned int num_of_nodes = 0;
@@ -69,4 +70,44 @@ bool isListEmpty() {
 
 unsigned int getNumOfNodes() {
     return num_of_nodes;
+}
+
+void removeFromListAtPlace(unsigned int n) {
+    if (num_of_nodes == 0) {
+        return;
+    }
+    if (n == 0) {
+        connfdNode node = popFromList();
+        Close(node.connfd);
+        return;
+    }
+    if (n == num_of_nodes - 1) {
+        connfdNode *temp = head;
+        while (temp->next && temp->next->next) {
+            temp = temp->next;
+        }
+        connfdNode *toRemove = temp->next;
+        temp->next = NULL;
+        Close(toRemove->connfd);
+        free(toRemove);
+        num_of_nodes--;
+        return;
+    }
+    connfdNode *temp = head, *prev = head;
+    for (int i = 0; i < n; i++) {
+        prev = temp;
+        temp = temp -> next;
+    }
+    prev->next = temp->next;
+    Close(temp->connfd);
+    free(temp);
+    num_of_nodes--;
+}
+
+void dropHalfList() {
+    for (int i = 0; i < (num_of_nodes+1)/2; i++) {
+        unsigned int random_num = rand();
+        unsigned int random_placement = random_num % num_of_nodes;
+        removeFromListAtPlace(random_placement);
+    }
 }

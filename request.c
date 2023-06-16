@@ -133,15 +133,18 @@ void requestServeDynamic(int fd, char *filename, char *cgiargs, stats_struct* st
    stats_printer(buf, *stats);
 
    Rio_writen(fd, buf, strlen(buf));
-
-   if (Fork() == 0) {
+   pid_t pid = Fork();
+   if (pid == 0) {
       /* Child process */
       Setenv("QUERY_STRING", cgiargs, 1);
       /* When the CGI process writes to stdout, it will instead go to the socket */
       Dup2(fd, STDOUT_FILENO);
       Execve(filename, emptylist, environ);
    }
-   Wait(NULL);
+   else {
+       waitpid(pid, NULL, 0);
+   }
+   //Wait(NULL);
 }
 
 
