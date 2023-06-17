@@ -105,7 +105,7 @@ void removeFromListAtPlace(unsigned int n) {
 }
 
 void dropHalfList() {
-    for (int i = 0; i < (num_of_nodes+1)/2; i++) {
+    for (int i = 0; i < (num_of_nodes)/2; i++) {
         unsigned int random_num = rand();
         unsigned int random_placement = random_num % num_of_nodes;
         removeFromListAtPlace(random_placement);

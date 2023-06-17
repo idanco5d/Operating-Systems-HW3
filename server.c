@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
         gettimeofday(&curr_arrival_time, NULL);
         pthread_mutex_lock(&mutex);
         if (connfd >= 0) {
-            if (queueSize == getNumOfNodes() + num_of_working) {
+            if (queueSize <= getNumOfNodes() + num_of_working) {
                 if (handleBlockInMasterThread(connfd,schedalg)) {
                     pthread_mutex_unlock(&mutex);
                     continue;
