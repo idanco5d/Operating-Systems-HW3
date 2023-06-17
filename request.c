@@ -144,7 +144,7 @@ void requestServeDynamic(int fd, char *filename, char *cgiargs, stats_struct* st
       Execve(filename, emptylist, environ);
    }
    else {
-       waitpid(pid, NULL, 0);
+       WaitPid(pid,NULL,0);
    }
    //Wait(NULL);
 }
