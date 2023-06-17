@@ -31,6 +31,7 @@ void* requestHandleByThread(void* args) {
     worker_thread_input * input = (worker_thread_input *)args;
     thread_stats threadStats = {*(input->thread_num), 0, 0, 0};
     stats_struct stats;
+    stats.handler_thread_stats = &threadStats;
     while (1) {
         pthread_mutex_lock(&mutex);
         while (isListEmpty() || num_of_working == queueSize) {
@@ -39,16 +40,17 @@ void* requestHandleByThread(void* args) {
         connfdNode connfd_node = popFromList();
         num_of_working++;
         pthread_mutex_unlock(&mutex);
+        //calculate current stats
         stats.arrival_time = connfd_node.arrival_time;
-        stats.handler_thread_stats = &threadStats;
         struct timeval curr_dispatch_time;
         gettimeofday(&curr_dispatch_time, NULL);
         timersub(&curr_dispatch_time, &connfd_node.arrival_time, &stats.dispatch_interval);
+        //invoke request and close the connection after handling
         requestHandle(connfd_node.connfd, &stats);
         Close(connfd_node.connfd);
         pthread_mutex_lock(&mutex);
         num_of_working--;
-        if ((strcmp(input->schedalg,"block_flush") == 0 && num_of_working == 0 && getNumOfNodes() == 0) || strcmp(input->schedalg,"block") == 0) {
+        if ((strcmp(input->schedalg,"bf") == 0 && num_of_working == 0 && getNumOfNodes() == 0) || strcmp(input->schedalg,"block") == 0 || strcmp(input->schedalg,"random") == 0) {
             pthread_cond_signal(&cond_master);
         }
         pthread_mutex_unlock(&mutex);
@@ -63,7 +65,7 @@ bool handleMasterThreadInDynamicOrDropTail(int connfd, int maxSize, char* scheda
             (queueSize)++;
         }
     }
-    if (strcmp(schedalg, "dynamic")==0 || strcmp(schedalg, "drop_tail")==0) {
+    if (strcmp(schedalg, "dynamic")==0 || strcmp(schedalg, "dt")==0) {
         Close(connfd);
         return true;
     }
@@ -71,12 +73,12 @@ bool handleMasterThreadInDynamicOrDropTail(int connfd, int maxSize, char* scheda
 }
 
 bool handleBlockInMasterThread(int connfd, char* schedalg) {
-    if (strcmp(schedalg, "block")==0 || strcmp(schedalg, "block_flush")==0) {
+    if (strcmp(schedalg, "block")==0 || strcmp(schedalg, "bf")==0) {
         while (queueSize == getNumOfNodes() + num_of_working) {
                 pthread_cond_wait(&cond_master, &mutex);
         }
     }
-    if (strcmp(schedalg, "block_flush")==0) {
+    if (strcmp(schedalg, "bf")==0) {
         Close(connfd);
         return true;
     }
@@ -84,7 +86,7 @@ bool handleBlockInMasterThread(int connfd, char* schedalg) {
 }
 
 bool handleDropHeadInMasterThread(int connfd, char* schedalg) {
-    if (strcmp(schedalg,"drop_head")==0) {
+    if (strcmp(schedalg,"dh")==0) {
         if (getNumOfNodes() > 0) {
             int oldestRequest = popFromList().connfd;
             Close(oldestRequest);
@@ -98,8 +100,9 @@ bool handleDropHeadInMasterThread(int connfd, char* schedalg) {
 }
 
 void handleDropRandomInMasterThread(char* schedalg) {
-    if (strcmp(schedalg,"drop_random")==0) {
+    if (strcmp(schedalg,"random")==0) {
         dropHalfList();
+        pthread_cond_wait(&cond_master, &mutex);
     }
 }
 
@@ -109,20 +112,25 @@ int main(int argc, char *argv[])
     struct sockaddr_in clientaddr;
     char* schedalg = (char*)malloc(sizeof(char)*(strlen(argv[4])+1));
     strcpy(schedalg,argv[4]);
+    if (strcmp(schedalg, "block") != 0 && strcmp(schedalg, "bf") != 0 && strcmp(schedalg, "dh") != 0
+    && strcmp(schedalg, "dt") != 0 && strcmp(schedalg, "dynamic") != 0 && strcmp(schedalg, "random") != 0) {
+        fprintf(stderr, "Usage: %s <port>\n", argv[0]);
+        exit(1);
+    }
     pthread_mutex_init(&mutex,NULL);
     pthread_cond_init(&cond,NULL);
     pthread_cond_init(&cond_master,NULL);
     getargs(&port, argc, argv, 1);
     getargs(&numthreads,argc,argv, 2);
     getargs(&queueSize,argc,argv, 3);
+    pthread_t* threads = (pthread_t*)malloc(sizeof(pthread_t)*numthreads);
     for (int i = 0; i < numthreads; i++) {
-        pthread_t t;
         unsigned int* threadNum = (unsigned int*)malloc(sizeof(int));
         *threadNum = i;
         worker_thread_input* input = (worker_thread_input*)malloc(sizeof(worker_thread_input));
         input->thread_num = threadNum;
         input->schedalg = schedalg;
-        pthread_create(&t, NULL, requestHandleByThread, (void*)(input));
+        pthread_create(&threads[i], NULL, requestHandleByThread, (void*)(input));
     }
     if (strcmp(schedalg, "dynamic")==0) {
         getargs(&maxSize, argc, argv, 5);

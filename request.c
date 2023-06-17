@@ -38,16 +38,18 @@ void requestError(int fd, char *cause, char *errnum, char *shortmsg, char *longm
 
    //removed extra \r\n
    sprintf(buf, "Content-Length: %lu\r\n", strlen(body));
-   Rio_writen(fd, buf, strlen(buf));
-   printf("%s", buf);
-
    stats_printer(buf, *stats);
+   sprintf(buf, "%s\r\n", buf);
    Rio_writen(fd, buf, strlen(buf));
    printf("%s", buf);
 
-    sprintf(buf, "%s\r\n", buf);
-    Rio_writen(fd, buf, strlen(buf));
-    printf("%s", buf);
+//
+//   Rio_writen(fd, buf, strlen(buf));
+//   printf("%s", buf);
+//
+//
+//    Rio_writen(fd, buf, strlen(buf));
+//    printf("%s", buf);
 
    // Write out the content
    Rio_writen(fd, body, strlen(body));
