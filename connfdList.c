@@ -105,9 +105,14 @@ void removeFromListAtPlace(unsigned int n) {
 }
 
 void dropHalfList() {
-    for (int i = 0; i < (num_of_nodes)/2; i++) {
-        unsigned int random_num = rand();
-        unsigned int random_placement = random_num % num_of_nodes;
+    if (num_of_nodes == 1) {
+        connfdNode toRemove = popFromList();
+        Close(toRemove.connfd);
+        return;
+    }
+    unsigned int halfNodesAmount = ceil(num_of_nodes/2);
+    for (unsigned int i = 0; i < halfNodesAmount; i++) {
+        unsigned int random_placement = rand() % num_of_nodes;
         removeFromListAtPlace(random_placement);
     }
 }

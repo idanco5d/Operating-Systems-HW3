@@ -50,9 +50,12 @@ void* requestHandleByThread(void* args) {
         Close(connfd_node.connfd);
         pthread_mutex_lock(&mutex);
         num_of_working--;
-        if ((strcmp(input->schedalg,"bf") == 0 && num_of_working == 0 && getNumOfNodes() == 0) || strcmp(input->schedalg,"block") == 0 || strcmp(input->schedalg,"random") == 0) {
+        if ((strcmp(input->schedalg,"bf") == 0 && num_of_working == 0 && getNumOfNodes() == 0) || strcmp(input->schedalg,"block") == 0) {
             pthread_cond_signal(&cond_master);
         }
+//        if ((strcmp(input->schedalg,"bf") == 0 && num_of_working == 0 && getNumOfNodes() == 0) || strcmp(input->schedalg,"block") == 0 || strcmp(input->schedalg,"random") == 0) {
+//            pthread_cond_signal(&cond_master);
+//        }
         pthread_mutex_unlock(&mutex);
     }
     return NULL;
@@ -99,11 +102,17 @@ bool handleDropHeadInMasterThread(int connfd, char* schedalg) {
     return false;
 }
 
-void handleDropRandomInMasterThread(char* schedalg) {
+bool handleDropRandomInMasterThread(char* schedalg, int connfd) {
     if (strcmp(schedalg,"random")==0) {
-        dropHalfList();
-        pthread_cond_wait(&cond_master, &mutex);
+        if (getNumOfNodes() > 0) {
+            dropHalfList();
+//            pthread_cond_wait(&cond_master, &mutex);
+            return false;
+        }
+        Close(connfd);
+        return true;
     }
+    return false;
 }
 
 int main(int argc, char *argv[])
@@ -157,7 +166,10 @@ int main(int argc, char *argv[])
                     pthread_mutex_unlock(&mutex);
                     continue;
                 }
-                handleDropRandomInMasterThread(schedalg);
+                if (handleDropRandomInMasterThread(schedalg, connfd)) {
+                    pthread_mutex_unlock(&mutex);
+                    continue;
+                }
             }
             insertList(connfd, curr_arrival_time);
         }
