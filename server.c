@@ -90,7 +90,7 @@ bool handleBlockInMasterThread(int connfd, char* schedalg) {
 
 bool handleDropHeadInMasterThread(int connfd, char* schedalg) {
     if (strcmp(schedalg,"dh")==0) {
-        if (getNumOfNodes() > 0) {
+        if (!isListEmpty()) {
             int oldestRequest = popFromList().connfd;
             Close(oldestRequest);
         }
@@ -104,7 +104,7 @@ bool handleDropHeadInMasterThread(int connfd, char* schedalg) {
 
 bool handleDropRandomInMasterThread(char* schedalg, int connfd) {
     if (strcmp(schedalg,"random")==0) {
-        if (getNumOfNodes() > 0) {
+        if (!isListEmpty()) {
             dropHalfList();
 //            pthread_cond_wait(&cond_master, &mutex);
             return false;
