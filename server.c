@@ -53,9 +53,6 @@ void* requestHandleByThread(void* args) {
         if ((strcmp(input->schedalg,"bf") == 0 && num_of_working == 0 && getNumOfNodes() == 0) || strcmp(input->schedalg,"block") == 0) {
             pthread_cond_signal(&cond_master);
         }
-//        if ((strcmp(input->schedalg,"bf") == 0 && num_of_working == 0 && getNumOfNodes() == 0) || strcmp(input->schedalg,"block") == 0 || strcmp(input->schedalg,"random") == 0) {
-//            pthread_cond_signal(&cond_master);
-//        }
         pthread_mutex_unlock(&mutex);
     }
     return NULL;
@@ -106,7 +103,6 @@ bool handleDropRandomInMasterThread(char* schedalg, int connfd) {
     if (strcmp(schedalg,"random")==0) {
         if (!isListEmpty()) {
             dropHalfList();
-//            pthread_cond_wait(&cond_master, &mutex);
             return false;
         }
         Close(connfd);

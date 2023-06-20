@@ -46,24 +46,6 @@ connfdNode popFromList() {
     return toReturn;
 }
 
-void destroyList() {
-    connfdNode *temp = head;
-    while(temp != NULL) {
-        connfdNode *next = temp->next;
-        free(temp);
-        temp = next;
-    }
-    num_of_nodes = 0;
-    head = NULL;
-}
-
-void printList() {
-    connfdNode *temp = head;
-    while(temp != NULL) {
-        temp = temp->next;
-    }
-}
-
 bool isListEmpty() {
     return head == NULL;
 }
